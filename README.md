@@ -2,7 +2,7 @@
 
 This is not a lab I built from a shopping list. It grew the way most real infrastructure grows — out of necessity, available hardware, and a series of problems that needed solving. What started as a Debian box with a lot of hard drives has become a three-node Proxmox cluster running 13 LXC containers and 3 VMs, each placed deliberately, each solving something specific.
 
-This repository is the roof. Individual projects have their own repositories with their own documentation — this is where the architecture lives, and where the reasoning behind it is explained. It was built collaboratively with Claude (Anthropic) as an active tooling partner throughout — the architecture decisions, the direction, and the opinions are mine. Claude helped build it faster and document it more clearly than I would have alone. That fact belongs in this document because it describes how the work actually gets done.
+This repository is the roof. Individual projects have their own repositories with their own documentation — this is where the architecture lives, and where the reasoning behind it is explained.
 
 ---
 
@@ -135,8 +135,6 @@ The secondary purpose is deliberate skill development that maps to professional 
 
 ## Published Work
 
-Documentation and writing produced from this environment. The thoughts, the architecture decisions, the direction, and the opinions are mine. Claude helped build it faster and document it more clearly than I would have alone.
-
 | Title | File | Notes |
 |---|---|---|
 | On LLMs: Using Them as Engineering Tools | [EngineeringwithLLM.md](EngineeringwithLLM.md) | Philosophy and methodology. Why these tools belong in a serious practitioner's stack. |
@@ -145,21 +143,3 @@ Documentation and writing produced from this environment. The thoughts, the arch
 | The Sysadmin Stick | [AdminStick.md](AdminStick.md) | Persistent live USB build on Ventoy. Three dead ends documented before the working architecture. |
 | Fixing HTTPS in a Homelab | [TunneledMigrane.md](TunneledMigrane.md) | NPM and Cloudflare SSL debugging across two sessions. |
 | KDE Wallpaper Setter | [WallpaperChanger.md](WallpaperChanger.md) | Per-monitor wallpaper script for KDE Wayland. |
-
----
-
-## Repository Index
-
-| Repository | Description |
-|---|---|
-| [tailscale-lxc-exit-node](../tailscale-lxc-exit-node) | Tailscale subnet router and exit node on Proxmox LXC with WireGuard policy routing groundwork |
-
-*Additional repositories will be linked here as they are published.*
-
----
-
-## What's Next
-
-- VLAN segmentation using the existing managed switch and OpenWRT router
-- Backup and disaster recovery documentation
-- RHCSA certification
