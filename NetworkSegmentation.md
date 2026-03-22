@@ -1,151 +1,118 @@
 # Network Segmentation: From Flat LAN to Structured Infrastructure
 
-*A homelab journey — discovery, planning, and implementation*
+A three-node Proxmox cluster running 13 LXC containers and 3 VMs sat on a flat /24 for long enough that it became difficult to reason about. Public-facing containers shared a network with a 14TB NAS. Game servers shared a broadcast domain with workstations. The DHCP pool was a mess of devices nobody had catalogued in months.
+
+This is the story of auditing that network, designing a segmentation architecture, learning exactly where the limits of a single-NIC node are, and stopping cleanly when the hardware couldn't support the design.
 
 ---
 
-## Background
+## Step 1: Know What You Have
 
-This document tells the story of a single evening's work: auditing a production homelab network, identifying every device and service on it, and laying the groundwork to segment it into something structured, secure, and maintainable.
+The starting point was a full nmap scan of the existing /24. The naive first attempt returned nothing:
 
-The homelab in question is a three-node Proxmox cluster running 13 LXC containers and 3 VMs. It grew organically — out of necessity, available hardware, and a series of problems that needed solving. The network it sat on grew the same way: flat, functional, and increasingly difficult to reason about as the number of services expanded.
-
-The immediate trigger for this project was a simple one: the DHCP pool was getting messy. But the real motivation runs deeper. Several of the services running on this cluster are public-facing through a Cloudflare tunnel. A compromised container on the same flat network as a NAS with 14TB of personal data is an unacceptable risk — not theoretical, just not yet addressed. Segmentation was the answer.
-
-A new OPNsense appliance had just been provisioned. Before touching anything, the first task was to understand exactly what was on the network. That meant running a proper port scan and working through the results methodically.
-
----
-
-## Step 1: Network Discovery with nmap
-
-The starting point was a basic nmap scan of the entire existing flat subnet. The first attempt returned nothing useful:
-
-```bash
+```
 sudo nmap 192.168.1.0
 ```
 
-Result: *host seems down.* This is a common stumbling block. nmap's default behavior is to send a ping probe first and skip the host if it doesn't respond. Many devices — especially firewalls and consumer electronics — block ICMP ping by default. The fix is the `-Pn` flag, which tells nmap to assume the host is up and scan anyway. But the more important mistake was the target address itself: `192.168.1.0` is the network address, not a host. The correct target for a subnet scan is the CIDR range.
+Two problems. First, `192.168.1.0` is the network address, not a host. Second, nmap's default behavior is to ping-probe first and skip hosts that don't respond — which describes most firewalls, consumer electronics, and anything with ICMP blocked. The correct invocation:
 
-```bash
-sudo nmap -Pn 192.168.1.0/24
+```
+sudo nmap -Pn -sV -O -A -T4 192.168.1.0/24 -oN network_map.txt
 ```
 
-That returned 32 live hosts. A second, more detailed scan with service version detection, OS fingerprinting, and aggressive probing filled in the picture:
-
-```bash
-sudo nmap -sV -O -A -T4 192.168.1.0/24 -oN network_map.txt
-```
-
-- `-sV` — probes open ports to identify the actual service and version running
-- `-O` — attempts OS detection
+- `-Pn` — skip the ping probe, assume hosts are up
+- `-sV` — probe open ports for service and version
+- `-O` — attempt OS detection
 - `-A` — combines OS detection, version detection, script scanning, and traceroute
-- `-T4` — faster timing template
-- `-oN` — saves output to a file for reference
+- `-T4` — faster timing
 
-What came back was a complete picture of the network — not just IP addresses and open ports, but application banners, hostnames, device types, and in several cases the exact software version running on each service.
+That returned 26 live hosts. A few things came out of the results worth noting.
 
----
+The `BC:24:11` MAC prefix appears on the majority of hosts. That OUI belongs to Proxmox — every address showing that prefix is an LXC container or VM on the cluster. Identifying that pattern reduced the unknown host count significantly.
 
-## Step 2: Making Sense of the Results
+Several devices assumed to be phones turned out to be smart TVs. The verbose scan fingerprineted them by model via UPnP and AirTunes service banners. Assumptions about a flat network are unreliable. A scan before making architectural decisions is not optional.
 
-Working through the scan results took time. Some devices identified themselves immediately. Others required cross-referencing MAC address OUI prefixes, banner strings, and open port combinations.
+The game servers share identical SSH host keys. They were cloned from a template. Pterodactyl manages all of them.
 
-32 live hosts came back across the subnet — a spectrum of devices: network infrastructure, Proxmox cluster nodes, an array of LXC containers running self-hosted applications, Windows workstations, game servers, smart TVs, IoT devices, and a handful of mobile phones on the dynamic DHCP pool. Each one needed to be identified, documented, and assigned a target segment.
-
-A few findings worth highlighting:
-
-The `BC:24:11` MAC prefix appears on the majority of hosts. This is the OUI prefix assigned to Proxmox virtual machines — every address with that prefix is an LXC container or VM running on the cluster. Identifying that pattern reduced the unknown host count significantly and made it clear just how much of the subnet was cluster traffic.
-
-Several hosts that were assumed to be mobile phones turned out to be smart TVs. The verbose scan fingerprinted them by model number via UPnP and AirTunes service banners — a good reminder that assumptions about a flat network are unreliable and that a scan is worth running before making architectural decisions based on what you think is there.
-
-The game servers share identical SSH host keys across all instances — a tell that they were cloned from a template rather than provisioned individually. Pterodactyl, the game server management panel, handles provisioning for all of them.
-
-The network edge container revealed its full service stack in the scan. This is the container that handles DNS, ad blocking, and reverse proxying for the entire LAN — seeing it laid out in a port scan is a useful reminder of how much responsibility sits in a single LXC.
+Working through the results took time. Every host got documented: IP, MAC, hostname, OS, services, and a target segment assignment. That inventory became the source of truth for everything that followed.
 
 ---
 
-## Step 3: Planning the Segmentation
+## Step 2: Design the Segments
 
-With a complete inventory in hand, the segmentation plan came together around a clear threat model: the public-facing LXCs are all reachable from the internet through a Cloudflare tunnel. They have no business being on the same flat network as the NAS, the Proxmox management interfaces, or the Windows workstations.
+With a complete inventory, the threat model was straightforward. Public-facing containers are reachable from the internet through a Cloudflare tunnel. They have no business being on the same flat network as the NAS, Proxmox management interfaces, or workstations. Segmentation was the answer.
 
-The solution is an internal segmentation firewall. OPNsense sits inside the existing network with its WAN interface on the trusted LAN and routes downstream into purpose-built segments. The Netgear router remains the internet gateway and DHCP server for the trusted LAN. Nothing changes for existing devices. OPNsense only handles traffic destined for the new segments.
+The architecture: an internal segmentation firewall (OPNsense) with its WAN interface on the trusted LAN, routing downstream into purpose-built segments. The existing gateway remains the internet gateway and DHCP server for trusted LAN devices. Nothing changes for them. The firewall only handles traffic destined for new segments.
 
-The topology:
+Planned segments:
+
+| Segment | Subnet | VLAN | Purpose |
+|---------|--------|------|---------|
+| Trusted LAN | 192.168.1.0/24 | 1 | Workstations, NAS, Proxmox nodes |
+| Management | 10.10.10.0/26 | untagged | Management VMs |
+| Public-facing LXCs | 10.10.10.192/26 | 10 | Cloudflare tunnel ingress, NPM, public services |
+| Game Servers | 10.10.20.0/24 | 20 | Isolated game server LXCs |
+| IoT | 10.10.30.0/26 | 30 | Smart TVs, Ring, Nintendo Switch |
+| IP Cameras | 10.10.30.128/26 | 35 | Future — isolated camera traffic |
+
+IoT and cameras are carved from a single /24 using /26 subnets. Two adjacent ranges for similar device types, no wasted /24 on 30 smart home devices. The game servers need specific ports forwarded for in-game connections but nothing else — default deny, explicit port-forward allows.
+
+The DMZ is split into two /26 tiers: management at .0/26 and public-facing services at .192/26. The middle two /26 blocks (.64/26 and .128/26) are reserved for future expansion.
+
+---
+
+## Step 3: DNS and Reverse Proxy
+
+Once services are on different subnets, internal access could get complicated. It doesn't, because of an existing pattern: Pi-hole handles local DNS for the entire LAN, and every hostname resolves to an Nginx Proxy Manager instance. NPM proxies to the correct backend regardless of subnet.
 
 ```
-Internet → Netgear (gateway) → SG250 (L2) → Proxmox cluster (trusted LAN)
-                                                        ↓
-                                                   OPNsense
-                                                        ↓
-                                  DMZ (10.10.10.x) | Game Servers (10.10.20.x) | IoT (10.10.30.x)
+client → Pi-hole (local DNS) → NPM (reverse proxy) → backend on any subnet
 ```
 
-The planned segments:
+A service moving from trusted LAN to the DMZ changes one field in NPM — the backend address. The DNS record stays. The user experience doesn't change. This decouples users and firewall rules from backend topology. Moving a service is an infrastructure operation, not a user-facing event.
 
-| Segment | Subnet | Purpose |
-|---|---|---|
-| Trusted LAN | 192.168.1.0/24 | Workstations, NAS, Proxmox nodes, network appliances — catch-all trusted devices |
-| DMZ | 10.10.10.0/24 | Public-facing LXCs routed through Cloudflare and NPM |
-| Game Servers | 10.10.20.0/24 | Isolated game server LXCs — LAN and VPN access only |
-| IoT | 10.10.30.0/27 | Smart TVs, Ring, Nintendo Switch — untrusted consumer devices |
-| IP Cameras | 10.10.30.32/27 | Future — isolated camera traffic |
-
-The IoT and camera ranges are carved out of a single /24 using /27 subnets. This keeps similar device types in adjacent address space without wasting a full /24 on 30 smart home devices. It also reflects intentional CIDR discipline — thinking in terms of actual host requirements rather than defaulting to /24 for everything.
-
-The game servers sit in their own segment with a specific access requirement: they need to be reachable via direct IP for in-game friend connections, but should not be reachable from the internet for anything else, and should have no path to the NAS or management interfaces. The solution is port forwarding on OPNsense for specific game ports, with a default-deny policy for everything else.
+The firewall implication is clean: the only path from the trusted LAN into the public-facing segment is NPM. One auditable rule. Nothing else needs a cross-segment path.
 
 ---
 
-## Step 4: DNS and Reverse Proxy — How Internal Routing Works
+## Step 4: VLAN Plumbing
 
-One of the more conceptually interesting pieces of this architecture is how internal service access works once everything is segmented. The answer is the combination of Pi-hole and Nginx Proxy Manager that already exists on the network edge container.
+Three-node Proxmox cluster, one physical NIC per node. The switch (a Cisco managed switch) handles VLAN separation at L2. The architecture is standard 802.1Q trunk — one physical NIC per node carries both untagged trusted LAN traffic and tagged VLAN traffic. The switch sorts by tag. This is router-on-a-stick, not a workaround.
 
-Pi-hole handles local DNS for the entire LAN. Instead of accessing services by IP address and port — which would break every time a service moved to a new segment — local DNS records point friendly hostnames to the NPM instance. NPM receives the request, reads the hostname, and proxies it to the correct backend regardless of what subnet it lives on.
+Each node gets a single VLAN-aware bridge (`vmbr0`) with `bridge-vids 2-4094`. LXC and VM interfaces attach to `vmbr0` with the appropriate tag for their segment. The switch trunk ports carry all relevant VLANs to all three nodes.
+
+Validation: a test Alpine LXC with `tag=20` on `vmbr0`, confirmed with tcpdump:
 
 ```
-client → Pi-hole (local DNS resolves hostname to NPM) → NPM → backend service on any subnet
+tcpdump -i vmbr0 -n -e port 67 or port 68
 ```
 
-A service can move from the trusted LAN to the DMZ without any change to how users access it. The DNS record and proxy rule stay the same — only the backend address in NPM changes. This pattern decouples users and firewall rules from backend topology. Moving a service is an infrastructure operation, not a user-facing event.
-
-The firewall implication is clean: OPNsense only needs to allow traffic from the NPM instance into the DMZ. Nothing else from the trusted LAN needs a path to the public-facing containers. That is a single, auditable rule rather than a sprawling allow list.
+Output showed `ethertype 802.1Q (0x8100), vlan 20` on outbound frames. Tagged traffic leaving the node correctly. Architecture validated.
 
 ---
 
-## Step 5: Validating the OPNsense Configuration
+## Step 5: Where It Stopped
 
-With the plan established, the OPNsense appliance needed to be validated before any production services were moved. A temporary management VM on the DMZ network served as the test client.
+Here is where the write-up diverges from "and then it worked."
 
-The validation sequence:
+OPNsense as a VM on a single-NIC Proxmox node cannot cleanly separate WAN from LAN when LAN needs to carry multiple VLANs.
 
-**Confirm OPNsense is reachable on the LAN.** An nmap scan of its assigned address confirmed the host was up, with all ports filtered — correct behavior for a firewall's WAN interface. A firewall that responds to pings on its WAN interface is advertising its presence unnecessarily.
+The problem is specific. A Proxmox VM interface with `tag=X` receives only that one VLAN — it cannot serve as a trunk. A VM interface with no tag receives all VLANs untagged — which is identical behavior to the WAN interface. With one physical NIC and one bridge, there is no Proxmox-level mechanism to hand OPNsense a tagged multi-VLAN trunk on one interface while keeping WAN distinct on another.
 
-**Confirm the upstream gateway is reachable.** From OPNsense's diagnostics, a ping to the Netgear confirmed the WAN-side path was working. The initial gateway configuration showed an IPv6 address rather than the expected IPv4 upstream — this required creating a static gateway entry manually under System → Gateways before the WAN interface would route correctly.
+What was observed: DHCP requests from VLAN 20 arriving on OPNsense's WAN interface (`vtnet0`) instead of the LAN interface. dnsmasq logging `no address range available for DHCP request via vtnet0` — receiving the broadcasts, finding no range defined for the WAN, dropping them. Frames were reaching OPNsense. They were arriving on the wrong interface.
 
-**Confirm the management VM has internet access.** Opening a website in a browser from the VM confirmed that NAT, routing, firewall rules, and DNS resolution were all working end to end.
+Every workaround examined required either compromising the WAN/LAN separation or accepting that the firewall can't enforce segment boundaries in any meaningful way. Neither is acceptable.
 
-The management VM's purpose was fulfilled at that point. It will be decommissioned — it exists only to validate the DMZ configuration from inside the segment.
-
----
-
-## What Comes Next
-
-The groundwork is complete. OPNsense is stable, the DMZ segment is validated, and every device on the network has a documented home. The remaining work is execution:
-
-- Create the remaining VLAN interfaces in OPNsense for game servers and IoT
-- Configure VLAN-aware bridges in Proxmox
-- Migrate LXCs to their target segments, starting with non-critical services
-- Add a static route on the Netgear pointing `10.10.0.0/16` traffic to OPNsense
-- Update Pi-hole DNS records as services move to new addresses
-
-The Cisco SG250 stays in pure L2 mode for now. Its port-based VLAN assignment and PoE capabilities become relevant later, when IP cameras and additional access points need to land on specific segments based on which physical port they connect to.
-
-The broader goal remains what it has always been in this environment: build something that works, understand why it works, and document the reasoning clearly enough that it can be explained, maintained, and rebuilt if necessary.
+The blocker is hardware, not configuration. A second NIC on the node, or a dedicated firewall appliance with proper interface separation, resolves it cleanly. The current attack surface is acceptable in the interim: Cloudflare tunnel handles all public ingress, LXC isolation handles internal separation, and no service migration happens until the architecture can be implemented correctly.
 
 ---
 
-## A Note on Process
+## Current State
 
-This entire session — from the first failed nmap command to a validated OPNsense deployment — was conducted collaboratively with Claude (Anthropic) as a technical partner. The architecture decisions, the hardware, the choice of tools, and the direction of the project are mine. Claude provided real-time technical guidance, helped interpret scan results, caught configuration issues, and served as the kind of knowledgeable colleague you can think out loud with at 10pm when something unexpected shows up in a port scan.
+The switch is configured and ready. VLAN trunk ports are set. Subnets are designed. The single-NIC trunk architecture works correctly for per-VLAN LXC tagging — that part is validated and production-ready. The segmentation firewall is parked until proper hardware is available.
 
-That is documented here for the same reason it is documented in the main infrastructure overview: using AI tooling as an accelerant — without losing architectural ownership or surrendering your own judgment — is a legitimate and increasingly relevant engineering skill. The person who understands what they built and why they built it owns the stack. The tool that helped them build it faster does not.
+The skills built here — VLAN design, 802.1Q trunking, OPNsense interface configuration, traffic path diagnosis with tcpdump — are what gets deployed correctly when the hardware supports it. Building it wrong to say it's done is not the point.
+
+---
+
+*Written with assistance from Claude (Anthropic) as part of an ongoing homelab documentation practice. The architecture decisions, the hardware, the direction, and the choice to stop at the right point are mine. Claude helped build it faster and document it more clearly than I would have alone.*
