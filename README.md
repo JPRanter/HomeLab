@@ -1,145 +1,84 @@
-# Homelab Infrastructure Overview
+# JP Panter — Homelab
 
-This is not a lab I built from a shopping list. It grew the way most real infrastructure grows — out of necessity, available hardware, and a series of problems that needed solving. What started as a Debian box with a lot of hard drives has become a three-node Proxmox cluster running 13 LXC containers and 3 VMs, each placed deliberately, each solving something specific.
+This repository is a practitioner's log. Not a showcase. Not a portfolio dressed up to look like one.
 
-This repository is the roof. Individual projects have their own repositories with their own documentation — this is where the architecture lives, and where the reasoning behind it is explained.
+Every piece here started as a problem. Something didn't work, or worked badly, or worked until it didn't. I dug into it, figured out what was actually happening, built something that fixed it, and wrote it up — because the next person who hits the same wall deserves a shorter detour than I got. That's the whole model. It's been consistent since the first commit.
 
----
-
-## Origin
-
-My background is break/fix. I learned hardware by repairing it, and Linux the same way — something needed to work, and I figured out how to make it work. The machine that is now my core node started as a tower I built from spare parts because I needed network storage. So I built a NAS. It ran Debian, it did its job, and that was enough.
-
-Then it wasn't enough. I started experimenting with virtual machines because the concept was interesting, and once I understood what virtualization could do, I wanted more of it with less overhead. That search led me to hypervisors, and I chose Proxmox because it is Debian-based. I already knew the conventions, the package manager, the file structure. That familiarity turned out to matter more than I expected — when something breaks at 11pm, knowing where to look is half the problem solved.
-
-That decision has held up through every iteration of this environment.
+If you're here because of a resume or a cover letter: welcome. The writing is the extension of the application. What a bullet point can't show you, this can.
 
 ---
 
-## On Tooling: Claude as Collaborator
+## On Using Claude
 
-This homelab was built with Claude (Anthropic) as an active and significant collaborator, and that fact belongs in this document.
+This lab was built with Claude (Anthropic) as an active collaborator, and that belongs at the top of this document.
 
-The hardware decisions are mine. The architecture is mine. The choice of Proxmox over ESXi, the decision to isolate workloads across three nodes, the network edge container and the reasoning that produced it — those are my calls, made from my understanding of what I was building and what I needed it to do. Claude did not design this environment.
+The hardware decisions are mine. The architecture is mine. The reasoning behind every major call — Proxmox over ESXi, workload isolation across three nodes, the network edge design — those came from my understanding of what I was building and what I needed it to do. Claude did not design this environment.
 
-What Claude did was work alongside me through the implementation. Configuration that would have meant hours of documentation diving got done in a focused session. Troubleshooting that might have taken an evening of trial and error got resolved through a conversation where I described the behavior and we reasoned through it together. When something broke in a way I hadn't seen before, Claude was the knowledgeable colleague I could think out loud with at any hour.
+What Claude did was work alongside me through the implementation. Troubleshooting sessions that might have taken an evening of trial and error got resolved through a conversation where I described the behavior and we reasoned through it together. Configuration that would have meant hours of documentation diving got done in a focused session. When something broke in a way I hadn't seen before, Claude was the knowledgeable colleague I could think out loud with at any hour.
 
 That is not a crutch. That is how good engineers work — they use the tools available to them, they stay in the driver's seat, and they make sure they understand what they're building well enough to own it when something goes wrong. I own this stack. I can troubleshoot it, explain every decision in it, and rebuild any part of it. Claude helped me build it faster and better than I would have alone.
 
-I document this transparently because the industry is moving toward this model whether it acknowledges it yet or not. Knowing how to use AI tooling as an accelerant — without losing architectural ownership or surrendering your own judgment — is a skill. This homelab is evidence of what that looks like in practice.
+I say this openly because the industry is moving toward this model whether it's ready to acknowledge it yet or not. Knowing how to use AI tooling as an accelerant — without losing architectural ownership or surrendering your own judgment — is a skill. This repository is evidence of what that looks like in practice.
 
 ---
 
-## The Cluster
+## What's Here
 
-Three nodes, three distinct purposes. The separation is not arbitrary — each node reflects the nature of its workload and the hardware available to run it.
+### Infrastructure and Operations
 
-### pve-home — Core Node
-*Frankenstein tower, built from spare parts over several years*
+**[The Sysadmin Stick](AdminStick.md)**
+A persistent live Linux environment on a Ventoy USB drive — one stick, any machine, familiar environment. Three documented dead ends before the architecture that actually worked. The dead ends are in there because they're useful, not because I'm proud of them.
 
-This is the node that cannot go down. It houses the services that define what this homelab actually is: a self-hosted alternative to cloud dependency, a personal web presence, and the storage backbone that everything else touches. It is as integrated into daily life as the fiber connection and the gateway router — it is infrastructure, not an experiment.
+**[Fixing HTTPS in a Homelab](TunneledMigrane.md)**
+Five separate failure modes across two debugging sessions on the same Nginx Proxy Manager and Cloudflare tunnel stack. The diagnostic approach that worked each time: map the full traffic path, identify which layer the failure is actually at, check the logs there — not at the layer surfacing the symptom.
 
-| Service | Type | Purpose |
-|---|---|---|
-| nginx | LXC | Personal website, served via Cloudflare tunnel |
-| Nextcloud | LXC | Self-hosted replacement for Google Drive and Docs |
-| NAS | LXC | SMB file server, 14TB of segmented storage |
-| MX Linux | VM | Management desktop — internal browser, cluster access |
+**[Network Segmentation](NetworkSegmentation.md)**
+From a flat LAN to structured infrastructure. Threat model reasoning throughout, because "I should add VLANs" is not a decision — it's a starting point. The reasoning that gets you to the actual decision is the useful part.
 
-The Cloudflare tunnel exposes exactly one thing to public traffic: the website. Nextcloud, the NAS, and everything else on this node is LAN-only. That boundary is intentional. The NAS is purely storage — no compute workloads run on it, and nothing lives on it.
+**[KDE Wayland Per-Monitor Wallpaper](WallpaperChanger.md)**
+Narrow problem, specific environment. Three tools failed before landing on the native DBus interface as the correct path. Two non-obvious requirements that aren't in KDE's documentation, found through the debugging session. Written up because this problem has no good answer anywhere and it should.
 
-The management VM deserves a note. Rather than context-switching between a daily driver and infrastructure work, I run a lightweight desktop environment inside the cluster itself. It has bookmarks for every browser-based application in the environment, serves as the primary interface for cluster management, and keeps project research and testing contained. It lives inside the thing it manages, which keeps access simple and my personal machine out of the equation.
+### On LLMs
 
-Nextcloud also represents something this homelab is fundamentally about: the question of whether cloud dependency can be replaced with something owned, understood, and controlled. Nextcloud replaced Google Drive and Docs. The answer to that question turned out to be yes, with tradeoffs I have chosen to accept and understand deeply.
+**[On LLMs: Using Them as Engineering Tools](EngineeringwithLLM.md)**
+*Or: why your ego is the most expensive thing in your stack*
+The practical case for treating LLMs as reference tools rather than magic or threat. What they're good at, where they fail, and why the engineers who pretend they don't exist are making a choice they'll eventually regret.
 
-### pve-games — Games Node
-*Repurposed gaming laptop — functioning GPU, non-functioning screen*
+**[On LLMs: Context Is the Cheat Code](ContextIsTheCheatCode.md)**
+*Or: I didn't know it was called prompt engineering*
+How the context block system in this repo works, why it works, and what a week of building it on the free plan actually produced. The Lego metaphor came naturally because that's what it felt like.
 
-This node did not start as a games node. It was the second machine I added to the cluster, originally running Nextcloud and serving as an Active Directory test environment. The hardware sat underutilized until someone asked if I could host a game server.
+### Reference
 
-The answer was obvious once the question was asked. Multi-core hyperthreaded processor, adequate RAM, a GPU that works fine without a screen attached — this machine was built to run games. It just needed the right workload. The failed screen is the only thing wrong with it.
-
-| Service | Type | Purpose |
-|---|---|---|
-| Pterodactyl | LXC | Game server management panel |
-| Game servers | LXCs | Multiple game servers, provisioned and managed via Pterodactyl |
-
-Pterodactyl handles provisioning, resource allocation, and management for individual game server containers. Each server runs in isolation.
-
-### pve-util — Utility Node
-*Salvaged workstation, RAM-upgraded from a donor machine*
-
-Two old dual-core workstations. One donated its RAM to the other. The resulting machine has enough memory for applications that are RAM-heavy but do not demand sustained CPU — which describes most of what runs on it. It is also, by a comfortable margin, the most stable hardware in the cluster.
-
-| Service | Type | Purpose |
-|---|---|---|
-| Network edge | LXC | See below — this one gets its own section |
-| Trilium | LXC | Self-hosted personal knowledge base |
-| Book manager | LXC | Self-hosted reading library |
-| Finance manager | LXC | Self-hosted personal finance tracking |
-| Mumble | LXC | Self-hosted voice communication |
-| Rocky Linux | VM | RHCSA exam preparation, CLI only |
+**[The Admin Stick Setup Guide](AdminStick.md)**
+Covered above. Worth calling out separately because the configuration files are complete and reusable — Ventoy JSON, persistence.conf, Firefox user.js for RAM-only cache. Take what's useful.
 
 ---
 
-## The Network Edge Container
+## The Infrastructure
 
-This container has its own section because it did not arrive at its current architecture all at once. It evolved, and the evolution is worth documenting because each step was driven by a real problem.
+Three-node Proxmox cluster. Each node reflects the nature of its workload and the hardware available to run it.
 
-It started as separate containers — Pi-hole, Nginx Proxy Manager, and Homarr each running independently. The problem that emerged was dependency coupling. Pi-hole handles local DNS. NPM depends on DNS to resolve the services it proxies. Homarr depends on both. When Pi-hole went down, it did not just take DNS with it — it took the reverse proxy and the dashboard as well. Three services that failed together were functionally one service that did not know it yet.
+**pve-home** — Core node. Frankenstein tower, spare parts, built over several years. The node that cannot go down. Nginx serving the personal site via Cloudflare tunnel, Nextcloud replacing Google Drive and Docs, a 14TB NAS, a management VM that lives inside the cluster it manages.
 
-The first solution was a single Docker Compose configuration. That solved the dependency problem and created a new one: any time a single service needed troubleshooting, the entire stack came down with it. For the container responsible for DNS and reverse proxying across the whole LAN, that was not acceptable.
+**pve-games** — Repurposed gaming laptop with a functioning GPU and a non-functioning screen. Runs Pterodactyl and the game server containers it provisions. The failed screen is the only thing wrong with it.
 
-The current solution is nested containers. Each service runs in its own Docker container inside the LXC, sharing the LXC's network namespace. They can be managed, restarted, and rebuilt independently. The overhead stays low, the isolation is real, and bringing down one service does not touch the others.
+**pve-util** — Salvaged workstation, RAM-upgraded from a donor machine. Runs the network edge container, Trilium, a book manager, a finance tracker, Mumble, and a Rocky Linux VM for RHCSA prep.
 
-The LXC itself runs Tailscale and WireGuard directly, making it the single point of presence for both remote access and VPN policy routing.
+The network edge container is where Pi-hole, Nginx Proxy Manager, Homarr, Tailscale, and WireGuard all live — each in its own Docker container inside the LXC, sharing the network namespace, independently manageable. That architecture came from a dependency coupling problem that took the whole stack down when any single service went sideways.
 
-**Running inside the network edge LXC:**
-- **Pi-hole** — DNS resolution and ad blocking for the entire LAN
-- **Nginx Proxy Manager** — reverse proxy for all internal services
-- **Homarr** — internal dashboard
-- **Tailscale** — zero-trust remote access and subnet routing
-- **WireGuard** — policy routing groundwork for commercial VPN integration
+Nothing is publicly exposed except the personal website. Remote access goes through Tailscale. The attack surface is small by design, not by accident.
 
 ---
 
-## Network Architecture
+## What's Next
 
-The current network is intentionally simple: flat topology, home router handling DHCP and serving as the default gateway, 500Mbps fiber with a non-ISP-supplied gateway router.
+VLAN segmentation is decided and the hardware exists — managed switch and an OpenWRT-flashed router are both in the environment. Implementation is the next project, not an unknown quantity.
 
-Internal service access follows a consistent path:
-```
-Client → Pi-hole (local DNS) → NPM (reverse proxy) → service
-```
+Caddy is replacing Nginx Proxy Manager. The tunnel piece documents why NPM became the problem. The Caddy migration will get its own write-up when it's done.
 
-Public traffic follows a narrow, deliberate path:
-```
-Internet → Cloudflare tunnel → nginx → personal website
-```
-
-Nothing else is publicly exposed. Remote access from outside the LAN goes through Tailscale. The attack surface is small by design, not by accident.
-
-A managed switch and an OpenWRT-flashed router are both present in the environment as proof of concept. VLAN segmentation is the natural next step — the hardware exists, the configuration has been tested, the implementation is a future project rather than an unknown quantity.
+RHCSA is in progress on the utility node.
 
 ---
 
-## What This Is Actually For
-
-The homelab exists to answer questions. Can cloud dependency be replaced with something self-hosted? Can a broken gaming laptop become useful infrastructure? Can salvaged workstation hardware run a reliable network edge? The consistent answer has been yes, given enough understanding of what the hardware can do and what the software needs.
-
-The deeper answer is that this environment exists because I learn by doing, and I have always learned by doing. Break/fix teaches you that systems are understandable — that there is always a reason something works or doesn't, and that finding the reason is a matter of knowing where to look and being willing to look there. That instinct built this lab, and this lab has sharpened that instinct considerably.
-
-The secondary purpose is deliberate skill development that maps to professional infrastructure work. Hypervisor selection, workload isolation, service dependency management, zero-trust networking, reverse proxy configuration — none of this was studied in isolation. It was learned because something needed to work. The Rocky Linux VM running RHCSA prep on the utility node is the most explicit version of that, but it describes the whole environment.
-
----
-
-## Published Work
-
-| Title | File | Notes |
-|---|---|---|
-| On LLMs: Using Them as Engineering Tools | [EngineeringwithLLM.md](EngineeringwithLLM.md) | Philosophy and methodology. Why these tools belong in a serious practitioner's stack. |
-| On LLMs: Context Is the Cheat Code | [ContextIsTheCheatCode.md](ContextIsTheCheatCode.md) | How the context block system was built and why it works. |
-| Network Segmentation: From Flat LAN to Structured Infrastructure | [NetworkSegmentation.md](NetworkSegmentation.md) | Threat model reasoning, VLAN architecture, implementation decisions. |
-| The Sysadmin Stick | [AdminStick.md](AdminStick.md) | Persistent live USB build on Ventoy. Three dead ends documented before the working architecture. |
-| Fixing HTTPS in a Homelab | [TunneledMigrane.md](TunneledMigrane.md) | NPM and Cloudflare SSL debugging across two sessions. |
-| KDE Wallpaper Setter | [WallpaperChanger.md](WallpaperChanger.md) | Per-monitor wallpaper script for KDE Wayland. |
+*Written and maintained with Claude (Anthropic) as a documentation collaborator. The decisions, the dead ends, and the opinions are mine. Claude helped me build it faster and write it more clearly than I would have alone.*
