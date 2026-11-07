@@ -8,7 +8,7 @@
 
 ## How JP works
 - Problem-first. Every project starts with something that didn't work.
-- Owns the decisions: hardware, architecture, and reasoning are his. Claude is a collaborator and fast reference, not the designer.
+- Owns the decisions: hardware, architecture, and reasoning are JP's. Claude is a collaborator and fast reference, not the designer.
 - Documents dead ends deliberately — they're useful to the next person.
 - Diagnoses by mapping the full path and finding the layer where the failure actually lives, not where the symptom shows.
 - Builds his context as a versioned tree of Markdown documents; values persistence because re-onboarding every session is a real cost.
