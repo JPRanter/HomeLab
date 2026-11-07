@@ -11,7 +11,7 @@
 - Owns the decisions: hardware, architecture, and reasoning are JP's. Claude is a collaborator and fast reference, not the designer.
 - Documents dead ends deliberately — they're useful to the next person.
 - Diagnoses by mapping the full path and finding the layer where the failure actually lives, not where the symptom shows.
-- Builds his context as a versioned tree of Markdown documents; values persistence because re-onboarding every session is a real cost.
+- Builds their context as a versioned tree of Markdown documents; values persistence because re-onboarding every session is a real cost.
 - Uses multiple LLMs (Claude, Gemini, ChatGPT) and cross-checks them in a "clean room" when an answer matters.
 
 ## Open questions (fill in)

@@ -6,7 +6,7 @@ the root changes rarely, branches track domains, leaves are volatile and close w
 
 | Layer | File | What it holds | Changes |
 |---|---|---|---|
-| L1 (root) | `L1-identity.md` | Who JP is, how he works | Rarely |
+| L1 (root) | `L1-identity.md` | Who JP is, how JP works | Rarely |
 | L1 (root) | `L1-communication.md` | How to talk to JP | Rarely |
 | L2 (branch) | `L2-interests.md` | Domains and current focus | Monthly-ish |
 | L3 (leaves) | `../Kumo/` | Active project docs | Every session |
