@@ -4,5 +4,4 @@ Public portfolio repo. JP's context and standing rules live in the private repo 
 
 ## Rules that apply here even without sb
 - **OPSEC:** this repo is public. Scrub every real IP, hostname, domain, MAC, UUID, container ID, credential, and personal detail before committing. Add back only what the reader needs.
-- **Kumo docs:** changes under `Kumo/` commit straight to `main` without asking (standing grant, 2026-11-07, until JP revokes).
 - **Articles:** no em dashes in JP's voice. End every article with a closing credit to Claude (Anthropic).

@@ -48,6 +48,10 @@ The practical case for treating LLMs as reference tools rather than magic or thr
 *Or: I didn't know it was called prompt engineering*
 How the context block system in this repo works, why it works, and what a week of building it on the free plan actually produced. The Lego metaphor came naturally because that's what it felt like.
 
+**[On LLMs: Git Is the Memory](GitIsTheMemory.md)**
+*Or: the most boring answer was the right one*
+Moving my second brain out of vendor memory and into a git repo I own. Too many copies, a front end I built instead of bundling, hub and spokes, and why a twenty-year-old version control tool turned out to be the linchpin. The misses are on the record too.
+
 ### Reference
 
 **[The Admin Stick Setup Guide](AdminStick.md)**
