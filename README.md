@@ -52,6 +52,11 @@ How the context block system in this repo works, why it works, and what a week o
 *Or: the most boring answer was the right one*
 Moving my second brain out of vendor memory and into a git repo I own. Too many copies, a front end I built instead of bundling, hub and spokes, and why a twenty-year-old version control tool turned out to be the linchpin. The misses are on the record too.
 
+### Project Journal
+
+**[Project Journal: Kiki, Entry 01: Scope Before Code](ProjectJournalKiki01.md)**
+The first entry in a running record of building Kiki, my offline second brain. Decisions, not code. Before the build went any further: the problem in one sentence, who it's for, what she must never become, and the requirement nobody writes down (knowing what tools you don't have).
+
 ### Reference
 
 **[The Admin Stick Setup Guide](AdminStick.md)**
