@@ -1,93 +1,84 @@
-# JP Panter — Homelab
+# JP Panter
 
-This repository is a practitioner's log. Not a showcase. Not a portfolio dressed up to look like one.
+**I decide what gets built, and I've built enough of it to know what that costs.**
 
-Every piece here started as a problem. Something didn't work, or worked badly, or worked until it didn't. I dug into it, figured out what was actually happening, built something that fixed it, and wrote it up — because the next person who hits the same wall deserves a shorter detour than I got. That's the whole model. It's been consistent since the first commit.
+Most of what's here was paid for in the trenches: salvaged hardware, outages at bad hours, and documentation I swore I'd write later and didn't. That last one is the reason this repository exists.
 
-If you're here because of a resume or a cover letter: welcome. The writing is the extension of the application. What a bullet point can't show you, this can.
-
----
-
-## On Using Claude
-
-This lab was built with Claude (Anthropic) as an active collaborator, and that belongs at the top of this document.
-
-The hardware decisions are mine. The architecture is mine. The reasoning behind every major call — Proxmox over ESXi, workload isolation across three nodes, the network edge design — those came from my understanding of what I was building and what I needed it to do. Claude did not design this environment.
-
-What Claude did was work alongside me through the implementation. Troubleshooting sessions that might have taken an evening of trial and error got resolved through a conversation where I described the behavior and we reasoned through it together. Configuration that would have meant hours of documentation diving got done in a focused session. When something broke in a way I hadn't seen before, Claude was the knowledgeable colleague I could think out loud with at any hour.
-
-That is not a crutch. That is how good engineers work — they use the tools available to them, they stay in the driver's seat, and they make sure they understand what they're building well enough to own it when something goes wrong. I own this stack. I can troubleshoot it, explain every decision in it, and rebuild any part of it. Claude helped me build it faster and better than I would have alone.
-
-I say this openly because the industry is moving toward this model whether it's ready to acknowledge it yet or not. Knowing how to use AI tooling as an accelerant — without losing architectural ownership or surrendering your own judgment — is a skill. This repository is evidence of what that looks like in practice.
+I'm an engineer. I don't like writing documentation, and I've spent enough nights rebuilding things nobody wrote down to know that not liking it isn't an excuse. So I did the lazy thing, which turned out to be the smart thing. I built a bot to do it for me.
 
 ---
 
-## What's Here
+## What I'm Building
 
-### Infrastructure and Operations
+**Kiki** is an offline second brain. My notes, decisions and history live in markdown and git, and a local model answers from them on hardware I own, from a flash drive if it has to. No subscription, and no vendor deciding what's worth remembering. When the notes don't have the answer, she says so instead of guessing.
 
-**[The Sysadmin Stick](AdminStick.md)**
-A persistent live Linux environment on a Ventoy USB drive — one stick, any machine, familiar environment. Three documented dead ends before the architecture that actually worked. The dead ends are in there because they're useful, not because I'm proud of them.
+The **Project Journal** is the record of that build. One decision at a time: the problem, the requirements, the options, the call and what it cost. Not a code tour. The reasoning behind it.
 
-**[Fixing HTTPS in a Homelab](TunneledMigrane.md)**
-Five separate failure modes across two debugging sessions on the same Nginx Proxy Manager and Cloudflare tunnel stack. The diagnostic approach that worked each time: map the full traffic path, identify which layer the failure is actually at, check the logs there — not at the layer surfacing the symptom.
+---
 
-**[Network Segmentation](NetworkSegmentation.md)**
-From a flat LAN to structured infrastructure. Threat model reasoning throughout, because "I should add VLANs" is not a decision — it's a starting point. The reasoning that gets you to the actual decision is the useful part.
+## How I Work
 
-**[KDE Wayland Per-Monitor Wallpaper](WallpaperChanger.md)**
-Narrow problem, specific environment. Three tools failed before landing on the native DBus interface as the correct path. Two non-obvious requirements that aren't in KDE's documentation, found through the debugging session. Written up because this problem has no good answer anywhere and it should.
+I build with AI the way you'd run a crew. The problem, the requirements, the architecture and the final call are mine. Claude (Anthropic) writes a lot of the code and most of the first drafts. I review what ships, I can explain every piece of it, and when it breaks at 2am, I'm the one on call, not the model.
+
+I say that out loud because pretending otherwise is the expensive choice. The skill isn't avoiding these tools. It's using them without handing over the wheel.
+
+---
+
+## The Work
+
+### Project Journal: Building Kiki
+Decisions, not code.
+
+**[Entry 01: Scope Before Code](ProjectJournalKiki01.md)**
+Before the build went any further: the problem in one sentence, who it's for, what it must never become, and the requirement nobody writes down.
 
 ### On LLMs
+Essays on using AI as an engineering tool, in the order they were written.
 
-**[On LLMs: Using Them as Engineering Tools](EngineeringwithLLM.md)**
-*Or: why your ego is the most expensive thing in your stack*
-The practical case for treating LLMs as reference tools rather than magic or threat. What they're good at, where they fail, and why the engineers who pretend they don't exist are making a choice they'll eventually regret.
+**[On Using LLMs as Engineering Tools](EngineeringwithLLM.md)**
+*Or: why your ego is the most expensive thing in your stack.* Treat LLMs as a reference tool, not magic and not a threat. What they're good at, where they fail, and why pretending they don't exist is a choice.
 
-**[On LLMs: Context Is the Cheat Code](ContextIsTheCheatCode.md)**
-*Or: I didn't know it was called prompt engineering*
-How the context block system in this repo works, why it works, and what a week of building it on the free plan actually produced. The Lego metaphor came naturally because that's what it felt like.
+**[On LLMs: Context Is the Cheat Code](ContextIstheCheatCode.md)**
+*Or: I didn't know it was called prompt engineering.* Writing down who you are so the model starts from somewhere useful. Built on the free plan, one block at a time.
+
+**[On LLMs: The Persistence Pivot](PersistencePivot.md)**
+*Or: trading privacy for a better memory.* Moving my context into a vendor's persistent memory to stop pasting it every morning, and naming what that cost.
 
 **[On LLMs: Git Is the Memory](GitIsTheMemory.md)**
-*Or: the most boring answer was the right one*
-Moving my second brain out of vendor memory and into a git repo I own. Too many copies, a front end I built instead of bundling, hub and spokes, and why a twenty-year-old version control tool turned out to be the linchpin. The misses are on the record too.
+*Or: the most boring answer was the right one.* Taking the memory back. One git repo as the only memory, hubs and spokes, and the misses left on the record.
 
-### Project Journal
+### Field Notes
+Things that broke, what was actually wrong, and how they got fixed. The dead ends are included because they're the useful part.
 
-**[Project Journal: Kiki, Entry 01: Scope Before Code](ProjectJournalKiki01.md)**
-The first entry in a running record of building Kiki, my offline second brain. Decisions, not code. Before the build went any further: the problem in one sentence, who it's for, what she must never become, and the requirement nobody writes down (knowing what tools you don't have).
+**[Network Segmentation](NetworkSegmentation.md)**
+From a flat LAN to a segmented one, with the threat model reasoning written out. "I should add VLANs" isn't a decision. It's where the decision starts.
 
-### Reference
+**[Fixing HTTPS in a Homelab](TunneledMigrane.md)**
+Five failure modes across two debugging sessions on one reverse proxy and tunnel stack. What worked every time: map the whole traffic path, find the layer that's actually failing, and read the logs there.
 
-**[The Admin Stick Setup Guide](AdminStick.md)**
-Covered above. Worth calling out separately because the configuration files are complete and reusable — Ventoy JSON, persistence.conf, Firefox user.js for RAM-only cache. Take what's useful.
+**[The Sysadmin Stick](AdminStick.md)**
+A persistent live Linux environment on one USB stick that boots on any machine. Three dead ends before the design that worked, and complete config files you can take.
 
----
+**[KDE Wayland Per-Monitor Wallpaper](WallpaperChanger.md)**
+A narrow problem with no good answer anywhere. Three tools failed before the native DBus interface worked, and it needed two requirements KDE doesn't document.
 
-## The Infrastructure
-
-Three-node Proxmox cluster. Each node reflects the nature of its workload and the hardware available to run it.
-
-**pve-home** — Core node. Frankenstein tower, spare parts, built over several years. The node that cannot go down. Nginx serving the personal site via Cloudflare tunnel, Nextcloud replacing Google Drive and Docs, a 14TB NAS, a management VM that lives inside the cluster it manages.
-
-**pve-games** — Repurposed gaming laptop with a functioning GPU and a non-functioning screen. Runs Pterodactyl and the game server containers it provisions. The failed screen is the only thing wrong with it.
-
-**pve-util** — Salvaged workstation, RAM-upgraded from a donor machine. Runs the network edge container, Trilium, a book manager, a finance tracker, Mumble, and a Rocky Linux VM for RHCSA prep.
-
-The network edge container is where Pi-hole, Nginx Proxy Manager, Homarr, Tailscale, and WireGuard all live — each in its own Docker container inside the LXC, sharing the network namespace, independently manageable. That architecture came from a dependency coupling problem that took the whole stack down when any single service went sideways.
-
-Nothing is publicly exposed except the personal website. Remote access goes through Tailscale. The attack surface is small by design, not by accident.
+**[Dolphin Thumbnails Were Fine. The JPEGs Were Not.](FakeJPGs.md)**
+Missing image previews on a network share, traced to files that were never JPEGs in the first place.
 
 ---
 
-## What's Next
+## The Lab
 
-VLAN segmentation is decided and the hardware exists — managed switch and an OpenWRT-flashed router are both in the environment. Implementation is the next project, not an unknown quantity.
+It died. Three machines built from salvaged parts (a spare-parts tower, a gaming laptop with a dead screen, a workstation rebuilt from a donor) ran everything from a NAS to game servers to the network edge. Then a power outage broke the cluster, a disk failed outright, and Frankenstein hardware sent its bill.
 
-Caddy is replacing Nginx Proxy Manager. The tunnel piece documents why NPM became the problem. The Caddy migration will get its own write-up when it's done.
-
-RHCSA is in progress on the utility node.
+The rebuild is slow on purpose: one machine at a time, each verified before the next one starts. The difference this time is that the lab has a memory to read from. Recovering a documented system is a checklist. Recovering an undocumented one is archaeology.
 
 ---
 
-*Written and maintained with Claude (Anthropic) as a documentation collaborator. The decisions, the dead ends, and the opinions are mine. Claude helped me build it faster and write it more clearly than I would have alone.*
+## Where This Is Going
+
+More Project Journal entries as Kiki grows. The lab comes back with its documentation written first, not last. And the cert stack keeps climbing toward CISSP, because whoever owns the whole thing has to answer for its security too.
+
+---
+
+*Written with Claude (Anthropic). The decisions, the dead ends and the opinions are mine. Claude helped me build it faster and say it more clearly than I would have alone.*
